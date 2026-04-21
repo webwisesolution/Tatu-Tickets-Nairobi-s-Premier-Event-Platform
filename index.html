@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Tatu Tickets | Nairobi's Premier Event Platform</title>
+    <!-- Tailwind CSS + Font Awesome + QR Code Library -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- Custom tailwind config override for better shadows -->
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(2px);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-3px);
+        }
+        .event-badge {
+            background: linear-gradient(135deg, #D32F2F, #F44336);
+        }
+        .tatu-glow {
+            text-shadow: 0 0 5px rgba(255,70,70,0.3);
+        }
+        .modal-overlay {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+        }
+        .qr-container canvas, .qr-container img {
+            border-radius: 1rem;
+            padding: 0.5rem;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c0392b;
+            border-radius: 10px;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+        .transition-smooth {
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-md border-b border-gray-200">
+        <div class="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-ticket-alt text-3xl text-red-600"></i>
+                <span class="text-2xl font-extrabold bg-gradient-to-r from-red-700 to-orange-600 bg-clip-text text-transparent">Tatu<span class="text-red-600">Tix</span></span>
+                <span class="hidden md:inline-block ml-2 text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Nairobi 🔥</span>
+            </div>
+            <div class="flex space-x-1 md:space-x-3 mt-2 sm:mt-0">
+                <button id="navEventsBtn" class="nav-btn px-4 py-2 rounded-full font-semibold transition-all bg-red-600 text-white shadow-md"><i class="fas fa-calendar-alt mr-1"></i> Events</button>
+                <button id="navDashboardBtn" class="nav-btn px-4 py-2 rounded-full font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300"><i class="fas fa-chalkboard-user mr-1"></i> Organizer Hub</button>
+                <button id="navTicketsBtn" class="nav-btn px-4 py-2 rounded-full font-semibold transition-all bg-gray-200 text-gray-700 hover:bg-gray-300"><i class="fas fa-qrcode mr-1"></i> My Tickets</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Sections -->
+    <main class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- EVENTS LISTING SECTION -->
+        <div id="eventsSection" class="section-view">
+            <div class="mb-6 flex justify-between items-center flex-wrap gap-3">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black text-gray-800"><i class="fas fa-music text-red-500 mr-2"></i>Upcoming Vibes<span class="text-red-600">.</span></h1>
+                    <p class="text-gray-500 mt-1">Discover the best events in Nairobi — from cultural fests to epic nights</p>
+                </div>
+                <div class="bg-white/60 rounded-full px-4 py-2 text-sm shadow-sm">
+                    <i class="fas fa-map-marker-alt text-red-500 mr-1"></i> Nairobi | Live Experiences
+                </div>
+            </div>
+            <div id="eventsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+                <!-- dynamic events injected -->
+            </div>
+        </div>
+
+        <!-- ORGANIZER DASHBOARD SECTION -->
+        <div id="dashboardSection" class="section-view hidden">
+            <div class="glass-card p-6 mb-8">
+                <div class="flex flex-wrap justify-between items-center border-b pb-4 mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-chart-line text-red-600 mr-2"></i>Organizer Command Center</h2>
+                    <button id="showCreateEventFormBtn" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-full shadow-md transition"><i class="fas fa-plus-circle mr-1"></i> Create New Event</button>
+                </div>
+                <!-- Create Event Form (hidden by default) -->
+                <div id="createEventFormContainer" class="hidden mb-8 bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                    <h3 class="text-xl font-semibold mb-3"><i class="fas fa-calendar-plus text-red-500"></i> Build your experience</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" id="eventName" placeholder="Event name *" class="border rounded-xl p-3 focus:ring-2 focus:ring-red-400 outline-none">
+                        <input type="text" id="eventDate" placeholder="Date (e.g., 15 June 2026, 8PM)" class="border rounded-xl p-3">
+                        <input type="text" id="eventVenue" placeholder="Venue (e.g., Uhuru Gardens)" class="border rounded-xl p-3">
+                        <input type="number" id="eventCapacity" placeholder="Capacity" class="border rounded-xl p-3">
+                        <input type="number" id="eventPrice" placeholder="Price (KES)" class="border rounded-xl p-3">
+                        <textarea id="eventDesc" rows="2" placeholder="Description (vibe, lineup...)" class="border rounded-xl p-3 col-span-1 md:col-span-2"></textarea>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button id="confirmCreateEventBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"><i class="fas fa-check-circle"></i> Publish Event</button>
+                        <button id="cancelCreateEventBtn" class="bg-gray-300 hover:bg-gray-400 px-5 py-2 rounded-xl">Cancel</button>
+                    </div>
+                </div>
+                <!-- Existing Events Stats -->
+                <h3 class="text-xl font-bold mt-2 mb-3"><i class="fas fa-list-ul text-red-500"></i> Your Events & Analytics</h3>
+                <div id="organizerEventsList" class="space-y-5">
+                    <!-- dynamic dashboard event cards -->
+                </div>
+                <!-- Reservation history / sales feed -->
+                <div class="mt-10 pt-4 border-t">
+                    <h3 class="text-lg font-bold mb-3"><i class="fas fa-receipt"></i> Recent Ticket Sales</h3>
+                    <div id="salesFeedContainer" class="max-h-80 overflow-y-auto bg-white rounded-xl p-3 shadow-inner">
+                        <!-- dynamic list of reservations -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MY TICKETS SECTION (QR Codes generation) -->
+        <div id="myTicketsSection" class="section-view hidden">
+            <div class="glass-card p-6">
+                <h2 class="text-2xl font-black mb-2 flex items-center"><i class="fas fa-qrcode text-red-600 text-3xl mr-3"></i> My Digital Vault</h2>
+                <p class="text-gray-500 mb-6">Your QR tickets grant access to Nairobi's best moments. Show at entrance.</p>
+                <div id="ticketsListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- dynamic ticket cards with QR -->
+                </div>
+                <div id="noTicketsMsg" class="text-center py-12 text-gray-400 hidden">
+                    <i class="fas fa-ticket-alt text-5xl mb-3"></i>
+                    <p>No tickets yet. Grab a ticket from the Events page! 🔥</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL FOR PURCHASE (Booking + Payment Simulation) -->
+    <div id="purchaseModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay transition-all">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl transform transition-all p-6 relative">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-xl">&times;</button>
+            <h3 class="text-2xl font-bold text-gray-800"><i class="fas fa-ticket"></i> Secure Reservation</h3>
+            <div id="modalEventInfo" class="mt-2 p-2 bg-red-50 rounded-lg text-sm"></div>
+            <div class="mt-4 space-y-3">
+                <input type="text" id="buyerName" placeholder="Full name *" class="w-full border rounded-xl p-3">
+                <input type="email" id="buyerEmail" placeholder="Email address *" class="w-full border rounded-xl p-3">
+                <div>
+                    <label class="block text-sm font-medium">Number of tickets</label>
+                    <input type="number" id="ticketQuantity" min="1" value="1" class="w-full border rounded-xl p-3">
+                    <p id="capacityWarning" class="text-xs text-red-500 hidden">Not enough capacity</p>
+                </div>
+                <div class="bg-gray-100 p-3 rounded-xl">
+                    <p class="font-bold">Total: <span id="modalTotalPrice">0</span> KES</p>
+                    <p class="text-xs text-gray-500">✨ Secure payment simulation (demo)</p>
+                </div>
+                <div class="border-t pt-3">
+                    <p class="text-sm font-semibold">💳 Demo Card</p>
+                    <input type="text" placeholder="Card number 4242 4242 4242 4242" class="w-full border rounded-lg p-2 text-sm mb-2">
+                    <div class="flex gap-2">
+                        <input placeholder="MM/YY" class="w-1/2 border rounded-lg p-2 text-sm">
+                        <input placeholder="CVC" class="w-1/2 border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <button id="confirmPurchaseBtn" class="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold py-3 rounded-xl shadow-lg mt-2 transition"><i class="fas fa-lock"></i> Confirm & Pay (Demo)</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-gray-400 text-sm py-6 border-t mt-12">
+        <p>🔥 Tatu Vibes Experience — Real Nairobi Energy. Demo platform with QR tickets & organizer tools.</p>
+    </footer>
+
+    <script>
+        // ---------- DATA MODEL ----------
+        let events = [];
+        let reservations = [];   // each reservation: { id, eventId, buyerName, buyerEmail, totalAmount, tickets: [{ ticketId, attendeeName, email }] , createdAt }
+
+        // Load / Save to localStorage
+        const STORAGE_KEY = "TatuTix_Platform";
+
+        function loadData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if(data) {
+                const parsed = JSON.parse(data);
+                events = parsed.events || [];
+                reservations = parsed.reservations || [];
+            } 
+            if(!events.length) {
+                // Seed "Tatu Vibes Experience" and Nairobi events
+                events = [
+                    { id: "ev1", name: "🔥 Tatu Vibes Experience 🔥", date: "Sat, 28 June 2026 • 6PM", venue: "KICC Grounds, Nairobi", capacity: 350, price: 2800, description: "The ultimate fusion of Afrobeat, Amapiano & Kenyan live music. Featuring top DJs, art installations, and electric vibes. Don't miss the biggest cultural wave!", imageIcon: "🎧", featured: true },
+                    { id: "ev2", name: "Nairobi Jazz Festival", date: "Fri, 5 July 2026 • 7PM", venue: "The Alchemist, Westlands", capacity: 180, price: 1500, description: "Smooth jazz under the stars, premium cocktails, and soulful rhythms.", imageIcon: "🎷" },
+                    { id: "ev3", name: "Tech & Beats Conference", date: "Sat, 19 July 2026 • 2PM", venue: "Edge Convention Centre", capacity: 250, price: 3200, description: "Where innovation meets music. Panel talks, networking, and afterparty." , imageIcon: "💻" }
+                ];
+                reservations = [];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ events, reservations }));
+        }
+
+        // Helper: tickets sold per event
+        function getTicketsSoldForEvent(eventId) {
+            let total = 0;
+            reservations.forEach(res => {
+                if(res.eventId === eventId) {
+                    total += res.tickets.length;
+                }
+            });
+            return total;
+        }
+
+        function getRemainingCapacity(event) {
+            const sold = getTicketsSoldForEvent(event.id);
+            return event.capacity - sold;
+        }
+
+        // ---- RENDER FUNCTIONS ----
+        function renderEventListings() {
+            const container = document.getElementById("eventsContainer");
+            if(!container) return;
+            if(events.length === 0) { container.innerHTML = "<div class='col-span-full text-center'>No events yet. Organizer can add.</div>"; return; }
+            container.innerHTML = events.map(ev => {
+                const remaining = getRemainingCapacity(ev);
+                const isSoldOut = remaining <= 0;
+                const specialTag = ev.name.includes("Tatu Vibes") ? '<span class="bg-red-600 text-white text-xs px-2 py-1 rounded-full ml-2"><i class="fas fa-fire"></i> Must Attend</span>' : '';
+                return `
+                    <div class="glass-card overflow-hidden transition-all hover:shadow-xl border border-gray-100">
+                        <div class="p-5">
+                            <div class="flex justify-between items-start">
+                                <div class="text-4xl">${ev.imageIcon || "🎉"}</div>
+                                ${specialTag}
+                            </div>
+                            <h3 class="text-xl font-bold mt-2 text-gray-800">${ev.name}</h3>
+                            <div class="flex items-center text-gray-500 text-sm mt-1"><i class="far fa-calendar-alt w-4 mr-1"></i>${ev.date} &nbsp;|&nbsp; <i class="fas fa-map-pin"></i> ${ev.venue}</div>
+                            <p class="text-gray-600 text-sm mt-2 line-clamp-2">${ev.description.substring(0, 85)}...</p>
+                            <div class="flex justify-between items-center mt-4">
+                                <div><span class="font-black text-red-700 text-xl">${ev.price.toLocaleString()} KES</span><span class="text-xs">/ticket</span></div>
+                                <div class="text-xs ${remaining < 10 ? 'text-orange-500' : 'text-green-600'}"><i class="fas fa-users"></i> ${remaining} left</div>
+                            </div>
+                            <button data-event-id="${ev.id}" class="buy-ticket-btn w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-xl transition shadow ${isSoldOut ? 'opacity-50 cursor-not-allowed bg-gray-400' : ''}" ${isSoldOut ? 'disabled' : ''}>${isSoldOut ? 'Sold Out' : 'Get Tickets 🔥'}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // attach buy event handlers
+            document.querySelectorAll('.buy-ticket-btn').forEach(btn => {
+                if(btn.disabled) return;
+                btn.addEventListener('click', (e) => {
+                    const eventId = btn.getAttribute('data-event-id');
+                    openPurchaseModal(eventId);
+                });
+            });
+        }
+
+        let currentSelectedEventId = null;
+
+        function openPurchaseModal(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if(!event) return;
+            const remaining = getRemainingCapacity(event);
+            if(remaining <= 0) { alert("Sorry, this event is sold out!"); return; }
+            currentSelectedEventId = eventId;
+            const modal = document.getElementById("purchaseModal");
+            document.getElementById("modalEventInfo").innerHTML = `<strong>${event.name}</strong> @ ${event.venue} • ${event.price.toLocaleString()} KES each`;
+            document.getElementById("ticketQuantity").value = 1;
+            document.getElementById("ticketQuantity").max = remaining;
+            document.getElementById("modalTotalPrice").innerText = event.price;
+            document.getElementById("buyerName").value = "";
+            document.getElementById("buyerEmail").value = "";
+            document.getElementById("capacityWarning").classList.add("hidden");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            // update total on quantity change
+            const qtyInput = document.getElementById("ticketQuantity");
+            const updateTotal = () => {
+                let qty = parseInt(qtyInput.value) || 1;
+                if(qty > remaining) { qty = remaining; qtyInput.value = remaining; document.getElementById("capacityWarning").classList.remove("hidden"); } 
+                else { document.getElementById("capacityWarning").classList.add("hidden"); }
+                const total = qty * event.price;
+                document.getElementById("modalTotalPrice").innerText = total;
+            };
+            qtyInput.oninput = updateTotal;
+            updateTotal();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("purchaseModal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+            currentSelectedEventId = null;
+        }
+
+        // Generate QR code for each ticket (display later)
+        function generateTicketQR(ticketId, attendeeName, eventName, elementId) {
+            const qrData = `TATUTIX:${ticketId}|${eventName}|${attendeeName}|NAIROBI`;
+            if(document.getElementById(elementId)) {
+                new QRCode(document.getElementById(elementId), {
+                    text: qrData,
+                    width: 100,
+                    height: 100,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        // Purchase logic
+        function confirmPurchase() {
+            if(!currentSelectedEventId) return;
+            const event = events.find(e => e.id === currentSelectedEventId);
+            if(!event) return;
+            const qty = parseInt(document.getElementById("ticketQuantity").value);
+            const buyerName = document.getElementById("buyerName").value.trim();
+            const buyerEmail = document.getElementById("buyerEmail").value.trim();
+            if(!buyerName || !buyerEmail) { alert("Please provide your name and email"); return; }
+            const remaining = getRemainingCapacity(event);
+            if(qty <= 0 || qty > remaining) { alert("Invalid quantity or not enough capacity."); return; }
+            const totalAmount = qty * event.price;
+            
+            // generate tickets array
+            const ticketsArray = [];
+            for(let i=1; i<=qty; i++) {
+                const ticketId = `TKT-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 6)}`.toUpperCase();
+                ticketsArray.push({
+                    ticketId: ticketId,
+                    attendeeName: `${buyerName}${qty > 1 ? ` (Guest ${i})` : ''}`,
+                    email: buyerEmail,
+                    eventName: event.name,
+                    eventId: event.id
+                });
+            }
+            const newReservation = {
+                id: `RES-${Date.now()}-${Math.floor(Math.random()*10000)}`,
+                eventId: event.id,
+                buyerName: buyerName,
+                buyerEmail: buyerEmail,
+                totalAmount: totalAmount,
+                tickets: ticketsArray,
+                createdAt: new Date().toISOString()
+            };
+            reservations.push(newReservation);
+            saveData();
+            closeModal();
+            alert(`✅ Success! ${qty} ticket(s) reserved for ${event.name}. Check "My Tickets" for QR codes.`);
+            // Switch to My Tickets view to show QR codes immediately
+            showSection('myTicketsSection');
+            renderMyTickets();
+            renderDashboard();  // update analytics
+            renderEventListings(); // update capacities
+        }
+
+        // DASHBOARD RENDER
+        function renderDashboard() {
+            const container = document.getElementById("organizerEventsList");
+            if(!container) return;
+            if(events.length === 0) { container.innerHTML = "<div class='text-gray-500'>No events yet. Create one above.</div>"; }
+            else {
+                container.innerHTML = events.map(ev => {
+                    const sold = getTicketsSoldForEvent(ev.id);
+                    const revenue = sold * ev.price;
+                    const remaining = ev.capacity - sold;
+                    return `
+                        <div class="bg-white rounded-xl p-4 shadow-sm border-l-4 border-red-500 flex flex-wrap justify-between items-center gap-3">
+                            <div class="flex-1">
+                                <div class="font-bold text-lg">${ev.name}</div>
+                                <div class="text-sm text-gray-500">📅 ${ev.date} | 📍 ${ev.venue}</div>
+                                <div class="flex gap-3 mt-1 text-xs"><span>🎟️ Sold: ${sold}</span> <span>🧑‍🤝‍🧑 Capacity: ${ev.capacity}</span> <span>💰 Revenue: ${revenue.toLocaleString()} KES</span></div>
+                            </div>
+                            <button data-delete-id="${ev.id}" class="delete-event-btn bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm hover:bg-red-200"><i class="fas fa-trash-alt"></i> Remove</button>
+                        </div>
+                    `;
+                }).join('');
+                // delete handlers
+                document.querySelectorAll('.delete-event-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const eventId = btn.getAttribute('data-delete-id');
+                        if(confirm("Delete event? All associated tickets/reservations will also be removed.")) {
+                            events = events.filter(ev => ev.id !== eventId);
+                            reservations = reservations.filter(res => res.eventId !== eventId);
+                            saveData();
+                            renderDashboard();
+                            renderEventListings();
+                            renderMyTickets();
+                        }
+                    });
+                });
+            }
+
+            // Sales Feed
+            const feedContainer = document.getElementById("salesFeedContainer");
+            if(reservations.length === 0) {
+                feedContainer.innerHTML = "<div class='text-center py-4 text-gray-400'>No ticket sales yet. Share your events!</div>";
+            } else {
+                feedContainer.innerHTML = reservations.slice().reverse().map(res => {
+                    const evFind = events.find(e => e.id === res.eventId);
+                    const eventName = evFind ? evFind.name : "Deleted Event";
+                    return `<div class="border-b py-2 flex justify-between text-sm"><div><i class="fas fa-user-check text-green-600"></i> <strong>${res.buyerName}</strong> bought ${res.tickets.length} ticket(s) for <span class="font-semibold">${eventName}</span></div><div>${new Date(res.createdAt).toLocaleDateString()}</div></div>`;
+                }).join('');
+            }
+        }
+
+        // MY TICKETS : QR code generation each ticket
+        function renderMyTickets() {
+            const container = document.getElementById("ticketsListContainer");
+            const noMsg = document.getElementById("noTicketsMsg");
+            let allTickets = [];
+            reservations.forEach(res => {
+                const ev = events.find(e => e.id === res.eventId);
+                const eventNameForDisplay = ev ? ev.name : "Legacy Event";
+                res.tickets.forEach(t => {
+                    allTickets.push({
+                        ticketId: t.ticketId,
+                        attendeeName: t.attendeeName,
+                        eventName: eventNameForDisplay,
+                        buyerEmail: t.email || res.buyerEmail,
+                        eventDate: ev ? ev.date : "Date TBA",
+                        venue: ev ? ev.venue : "Nairobi"
+                    });
+                });
+            });
+            if(allTickets.length === 0) {
+                container.innerHTML = '';
+                noMsg.classList.remove('hidden');
+                return;
+            }
+            noMsg.classList.add('hidden');
+            container.innerHTML = allTickets.map((ticket, idx) => {
+                const qrContainerId = `qr-code-${ticket.ticketId}-${idx}`;
+                return `
+                    <div class="bg-white border rounded-2xl p-4 shadow-md flex flex-col items-start gap-2">
+                        <div class="flex w-full justify-between"><span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full"><i class="fas fa-qrcode"></i> Digital Pass</span><span class="text-xs text-gray-400">#${ticket.ticketId.slice(-8)}</span></div>
+                        <h3 class="font-black text-lg">${ticket.eventName}</h3>
+                        <p class="text-sm"><i class="fas fa-user"></i> ${ticket.attendeeName}</p>
+                        <p class="text-xs text-gray-500"><i class="far fa-calendar-alt"></i> ${ticket.eventDate} | <i class="fas fa-map-pin"></i> ${ticket.venue}</p>
+                        <div id="${qrContainerId}" class="qr-container self-center my-2 flex justify-center w-full"></div>
+                        <button class="text-xs text-red-500 underline copy-ticket-id" data-ticket="${ticket.ticketId}"><i class="far fa-copy"></i> Copy ticket ID</button>
+                    </div>
+                `;
+            }).join('');
+            // generate QR codes after DOM insertion
+            allTickets.forEach((ticket, idx) => {
+                const containerId = `qr-code-${ticket.ticketId}-${idx}`;
+                const qrDataContent = `${ticket.ticketId}|${ticket.eventName}|${ticket.attendeeName}`;
+                if(document.getElementById(containerId)) {
+                    new QRCode(document.getElementById(containerId), {
+                        text: qrDataContent,
+                        width: 120,
+                        height: 120,
+                        colorDark: "#b91c1c",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                }
+            });
+            document.querySelectorAll('.copy-ticket-id').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tid = btn.getAttribute('data-ticket');
+                    navigator.clipboard.writeText(tid);
+                    alert("Ticket ID copied! Show at entrance with QR.");
+                });
+            });
+        }
+
+        // section toggling
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-view').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+            // update active nav styles
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach(btn => btn.classList.remove('bg-red-600', 'text-white'));
+            btns.forEach(btn => btn.classList.add('bg-gray-200', 'text-gray-700'));
+            if(sectionId === 'eventsSection') document.getElementById('navEventsBtn').classList.add('bg-red-600', 'text-white');
+            if(sectionId === 'dashboardSection') document.getElementById('navDashboardBtn').classList.add('bg-red-600', 'text-white');
+            if(sectionId === 'myTicketsSection') document.getElementById('navTicketsBtn').classList.add('bg-red-600', 'text-white');
+        }
+
+        // EVENT CREATE LOGIC
+        function showCreateForm() {
+            document.getElementById("createEventFormContainer").classList.toggle("hidden");
+        }
+        function createNewEvent() {
+            const name = document.getElementById("eventName").value.trim();
+            const date = document.getElementById("eventDate").value.trim();
+            const venue = document.getElementById("eventVenue").value.trim();
+            const capacity = parseInt(document.getElementById("eventCapacity").value);
+            const price = parseInt(document.getElementById("eventPrice").value);
+            const desc = document.getElementById("eventDesc").value.trim();
+            if(!name || !venue || isNaN(capacity) || isNaN(price) || capacity<=0 || price<=0) {
+                alert("Please fill all required fields (name, venue, capacity >0, price >0)");
+                return;
+            }
+            const newEvent = {
+                id: `ev${Date.now()}`,
+                name: name,
+                date: date || "TBA",
+                venue: venue,
+                capacity: capacity,
+                price: price,
+                description: desc || "Amazing new event in Nairobi",
+                imageIcon: "🎤"
+            };
+            events.push(newEvent);
+            saveData();
+            renderEventListings();
+            renderDashboard();
+            document.getElementById("createEventFormContainer").classList.add("hidden");
+            document.getElementById("eventName").value = "";
+            document.getElementById("eventDate").value = "";
+            document.getElementById("eventVenue").value = "";
+            document.getElementById("eventCapacity").value = "";
+            document.getElementById("eventPrice").value = "";
+            document.getElementById("eventDesc").value = "";
+            alert(`✅ "${name}" created! Now visible to attendees.`);
+            showSection('dashboardSection');
+        }
+
+        // EVENT LISTENERS & INIT
+        document.addEventListener("DOMContentLoaded", () => {
+            loadData();
+            renderEventListings();
+            renderDashboard();
+            renderMyTickets();
+            
+            document.getElementById("navEventsBtn").addEventListener("click", () => { showSection('eventsSection'); renderEventListings(); });
+            document.getElementById("navDashboardBtn").addEventListener("click", () => { showSection('dashboardSection'); renderDashboard(); });
+            document.getElementById("navTicketsBtn").addEventListener("click", () => { showSection('myTicketsSection'); renderMyTickets(); });
+            document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+            document.getElementById("confirmPurchaseBtn").addEventListener("click", confirmPurchase);
+            document.getElementById("showCreateEventFormBtn").addEventListener("click", showCreateForm);
+            document.getElementById("confirmCreateEventBtn").addEventListener("click", createNewEvent);
+            document.getElementById("cancelCreateEventBtn").addEventListener("click", () => { document.getElementById("createEventFormContainer").classList.add("hidden"); });
+            window.addEventListener("click", (e) => { if(e.target === document.getElementById("purchaseModal")) closeModal(); });
+        });
+    </script>
+</body>
+</html>
